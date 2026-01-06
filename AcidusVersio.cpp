@@ -122,13 +122,23 @@ void waitForButton() {
     System::Delay(200);
 }
 
+float measureInput() {
+    // Measure the voltage at the v/oct input for calibration purposes
+    float total = 0;
+    uint8_t numSamples = 10; // Take this many samples per step
+        for (uint8_t x = 0; x < numSamples; ++x) {
+        hw.knobs[0].Process();
+        total = total + hw.knobs[0].GetRawValue();
+    }
+    return total/numSamples;
+}
 
 void doCalibration() {
 
     inCalibration = true;
-    uint8_t numSamples = 10; // Take this many samples per step
+    
 
-    // STEP ONE - RELEASE BUTTON
+    // STEP ZERO - RELEASE BUTTON
     hw.tap.Debounce();
     hw.SetLed(0,1,1,1);
     hw.SetLed(1,1,1,1);
@@ -138,13 +148,16 @@ void doCalibration() {
     while (hw.tap.RawState()) {
         hw.tap.Debounce();
     }
+
+    // STEP ONE - ONE VOLT
     hw.SetLed(0,0,1,0);
     hw.SetLed(1,0,0,0);
     hw.SetLed(2,0,0,0);
     hw.SetLed(3,0,0,0);
     hw.UpdateLeds();
     waitForButton();
-    float onevolt_value = hw.knobs[0].GetRawValue();
+
+    float onevolt_value = measureInput();
 
     // STEP TWO - TWO VOLTS
     hw.SetLed(0,0,0,1);
@@ -153,12 +166,8 @@ void doCalibration() {
     hw.SetLed(3,0,0,0);
     hw.UpdateLeds();
     waitForButton();
-    float total = 0;
-    for (uint8_t x = 0; x < numSamples; ++x) {
-        hw.knobs[0].Process();
-        total = total + hw.knobs[0].GetRawValue();
-    }
-    float twovolt_value = total/numSamples;
+    
+    float twovolt_value = measureInput();
 
     // STEP TWO - ONE THREE VOLTS
     hw.SetLed(0,0,1,1);
@@ -168,12 +177,7 @@ void doCalibration() {
     hw.UpdateLeds();
     waitForButton();
     
-    total = 0;
-    for (uint8_t x = 0; x < numSamples; ++x) {
-        hw.knobs[0].Process();
-        total = total + hw.knobs[0].GetRawValue();
-    }
-    float threevolt_value = total/numSamples;
+    float threevolt_value = measureInput();
 
     // Estimate calibration values
     uint16_t first_estimate = (float)(onevolt_value - twovolt_value );
@@ -315,8 +319,6 @@ int main(void)
             hw.SetLed(hw.LED_1,triggerIn,triggerIn/1.7,0);
             hw.UpdateLeds();
         }
-
-
 
     }
 
