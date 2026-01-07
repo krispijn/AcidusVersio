@@ -159,8 +159,6 @@ void doCalibration() {
 
     hw.seed.PrintLine("Starting calibration process");
 
-    FixedCapStr<16> logStr("");
-
     // STEP ONE - ONE VOLT
     hw.SetLed(0,0,1,0);
     hw.SetLed(1,0,0,0);
