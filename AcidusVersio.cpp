@@ -122,13 +122,22 @@ void waitForButton() {
     System::Delay(200);
 }
 
-float measureInput() {
-    // Measure the voltage at the v/oct input for calibration purposes
+void logFloat(const char* message, float value){
+    FixedCapStr<16> logStr(message);
+    logStr.AppendFloat(value);
+    hw.seed.PrintLine(logStr);
+}
+
+float measureInputForCalibration() {
     float total = 0;
     uint8_t numSamples = 10; // Take this many samples per step
-        for (uint8_t x = 0; x < numSamples; ++x) {
-        hw.knobs[0].Process();
-        total = total + hw.knobs[0].GetRawValue();
+
+    for (uint8_t x = 0; x < numSamples; ++x) {
+        hw.ProcessAllControls();
+        float value = hw.GetKnobValue(DaisyVersio::KNOB_0);
+        // float value = hw.knobs[0].GetRawValue();
+        total = total + value;
+        logFloat("measurement ", value);
     }
     return total/numSamples;
 }
@@ -136,7 +145,6 @@ float measureInput() {
 void doCalibration() {
 
     inCalibration = true;
-    
 
     // STEP ZERO - RELEASE BUTTON
     hw.tap.Debounce();
@@ -149,6 +157,10 @@ void doCalibration() {
         hw.tap.Debounce();
     }
 
+    hw.seed.PrintLine("Starting calibration process");
+
+    FixedCapStr<16> logStr("");
+
     // STEP ONE - ONE VOLT
     hw.SetLed(0,0,1,0);
     hw.SetLed(1,0,0,0);
@@ -157,7 +169,9 @@ void doCalibration() {
     hw.UpdateLeds();
     waitForButton();
 
-    float onevolt_value = measureInput();
+    float onevolt_value = measureInputForCalibration();
+
+    logFloat("1 Volt value ", onevolt_value);
 
     // STEP TWO - TWO VOLTS
     hw.SetLed(0,0,0,1);
@@ -167,7 +181,9 @@ void doCalibration() {
     hw.UpdateLeds();
     waitForButton();
     
-    float twovolt_value = measureInput();
+    float twovolt_value = measureInputForCalibration();
+
+    logFloat("2 Volt value ", twovolt_value);
 
     // STEP TWO - ONE THREE VOLTS
     hw.SetLed(0,0,1,1);
@@ -177,13 +193,18 @@ void doCalibration() {
     hw.UpdateLeds();
     waitForButton();
     
-    float threevolt_value = measureInput();
+    float threevolt_value = measureInputForCalibration();
+
+    logFloat("3 Volt value ", threevolt_value);
 
     // Estimate calibration values
-    uint16_t first_estimate = (float)(onevolt_value - twovolt_value );
+    float first_estimate = (float)(onevolt_value - twovolt_value );
     float second_estimate = (float)(twovolt_value - threevolt_value );
     float avg_estimate = (first_estimate + second_estimate)/2;
     uint16_t offset = onevolt_value + avg_estimate;
+
+    logFloat("1st est ", first_estimate);
+    logFloat("2nd est ", second_estimate);
 
     // Save values to QSPI
     calibration_Offset = offset;

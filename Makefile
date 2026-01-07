@@ -13,7 +13,7 @@ CPP_SOURCES +=${wildcard ./open303/Source/DSPCode/*.cpp}
 #DEBUG=1
 
 # Library Locations
-LIBDAISY_DIR = ../Daisy/libDaisy
+LIBDAISY_DIR = ../Daisy/libDaisy-7.0.1
 DAISYSP_DIR = ../Daisy/DaisySP
 
 # Linker flags
